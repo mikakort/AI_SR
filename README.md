@@ -1,3 +1,1 @@
-#
-
-An AI powered symbol recognition tool
+# An AI powered symbol recognition tool
