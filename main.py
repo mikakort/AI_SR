@@ -73,7 +73,8 @@ canvas.bind ('<Button-3>', erase_cell)
 # func to print arr
 def print_arr():
     print(canvas_arr)
-    # ADD ACTUAL WINDOW CLOSE BECAUSE PROTOCOL REMOVES WINDOW KILL
+    # Kill window, because it doesn't do it on it's own
+    root.destroy()
 
 # Start / close func
 root.protocol("WM_DELETE_WINDOW", print_arr)
