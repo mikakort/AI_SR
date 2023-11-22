@@ -3,6 +3,7 @@ import tkinter as tk
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import csv
 
 # Create a root window
 root = tk.Tk ()
@@ -56,7 +57,7 @@ def draw(event, colour):
     #write in arr
     # logic --> canvas_arr[(current_x + current_y * 25)] = colour == "black" ? 1 : 0
     i = int(current_x/size + current_y/size * cell_nbr)
-    canvas_arr[i] = 255 if colour == "black" else 0
+    canvas_arr[i] = 1 if colour == "black" else 0
 
 
 # define fill/erase
@@ -110,6 +111,8 @@ Y_train = data_train[0]
 X_train = data_train[1:n]
 X_train = X_train / 255. # ''
 _,m_train = X_train.shape
+
+canvas_arr = canvas_arr[0:784].T
 
 
 # Working with the organized data
@@ -178,7 +181,7 @@ def get_accuracy(predictions, Y):
     print(predictions, Y)
     return np.sum(predictions == Y) / Y.size
 
-# putting it all together while printing every i th
+# putting it all together while printing every 10i
 def gradient_descent(X, Y, alpha, iterations):
     W1, b1, W2, b2 = init_params()
     for i in range(iterations):
@@ -193,3 +196,19 @@ def gradient_descent(X, Y, alpha, iterations):
 
 # do the thing
 W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.10, 500)
+
+# predict number from drawing
+result = get_predictions(forward_prop(W1, b1, W2, b2, canvas_arr)[3])
+
+# sort the result array (pick most probable answer)
+def print_most_frequent(arr):
+
+    values, counts = np.unique(arr, return_counts=True)
+    
+    ind = np.argmax(counts)
+    
+    print(values[ind])
+
+print_most_frequent(result)    
+
+print(result)
