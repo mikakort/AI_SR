@@ -2,6 +2,7 @@
 import tkinter as tk
 import numpy as np
 import pandas as pd
+import math
 from matplotlib import pyplot as plt
 import csv
 
@@ -9,8 +10,8 @@ import csv
 root = tk.Tk ()
 
 # Window params
-screen_width = 1000
-screen_height = 1000
+screen_width = 560  #multiple of 28 and small to avoid data loss
+screen_height = 560
 root.title ("Drawing Board")
 root.geometry (f"{screen_width}x{screen_height}")
 
@@ -55,9 +56,10 @@ def draw(event, colour):
     canvas.create_rectangle (current_x, current_y, current_x + size, current_y + size, fill = colour, outline = '')
 
     #write in arr
-    # logic --> canvas_arr[(current_x + current_y * 25)] = colour == "black" ? 1 : 0
-    i = int(current_x/size + current_y/size * cell_nbr)
-    canvas_arr[i] = 1 if colour == "black" else 0
+    # logic --> canvas_arr[(current_x + current_y * 28)] = colour == "black" ? 1 : 0
+    i = int(current_x/size + current_y/size * cell_nbr) # write in excel format
+    print(i)
+    canvas_arr[i] = 255 if colour == "black" else 0
 
 
 # define fill/erase
@@ -104,16 +106,17 @@ np.random.shuffle(data) # shuffle before splitting into dev and training sets or
 data_dev = data[0:1000].T  # transpose data into columns of 728 rows/pixels
 Y_dev = data_dev[0]
 X_dev = data_dev[1:n]
-X_dev = X_dev / 255.   # dividing by 255 will always give us 1, no gray
+X_dev = X_dev / 255.0   
 
 data_train = data[1000:m].T # ''
 Y_train = data_train[0]
 X_train = data_train[1:n]
-X_train = X_train / 255. # ''
+X_train = X_train / 255.0
 _,m_train = X_train.shape
 
-canvas_arr = canvas_arr[0:784].T
-
+# np.savetxt("canvas_array.csv", canvas_arr, delimiter=",")
+canvas_arr = canvas_arr / 255.0
+canvas_arr = canvas_arr.reshape((784, 1))
 
 # Working with the organized data
 
@@ -198,17 +201,6 @@ def gradient_descent(X, Y, alpha, iterations):
 W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.10, 500)
 
 # predict number from drawing
-result = get_predictions(forward_prop(W1, b1, W2, b2, canvas_arr)[3])
-
-# sort the result array (pick most probable answer)
-def print_most_frequent(arr):
-
-    values, counts = np.unique(arr, return_counts=True)
-    
-    ind = np.argmax(counts)
-    
-    print(values[ind])
-
-print_most_frequent(result)    
-
+Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, canvas_arr)
+result = get_predictions(A2)
 print(result)
