@@ -198,7 +198,7 @@ def gradient_descent(X, Y, alpha, iterations):
     return W1, b1, W2, b2
 
 # do the thing
-W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.10, 500)
+W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.1, 5000) # 0.1 ; 500 for quick testing (sub 1min)
 
 # predict number from drawing
 Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, canvas_arr)
