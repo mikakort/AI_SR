@@ -6,6 +6,8 @@ To open the drawing use:
 
 (the AI automatically starts after closing the window so don't kill the process)
 
+# Primary click and hold to draw, Secondary click and hold to erase
+
 To kill the process, open the terminal and run:
 
 # Ctrl + c

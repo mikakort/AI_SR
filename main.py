@@ -2,9 +2,9 @@
 import tkinter as tk
 import numpy as np
 import pandas as pd
-import math
 from matplotlib import pyplot as plt
 import csv
+import timeit
 
 # Create a root window
 root = tk.Tk ()
@@ -114,9 +114,10 @@ X_train = data_train[1:n]
 X_train = X_train / 255.0
 _,m_train = X_train.shape
 
-# np.savetxt("canvas_array.csv", canvas_arr, delimiter=",")
+
 canvas_arr = canvas_arr / 255.0
 canvas_arr = canvas_arr.reshape((784, 1))
+np.savetxt("canvas_array.csv", canvas_arr, delimiter=",") # save in csv for testing
 
 # Working with the organized data
 
@@ -181,26 +182,63 @@ def get_predictions(A2):
 
 # acc. out of 0-1
 def get_accuracy(predictions, Y):
-    print(predictions, Y)
+    # print(predictions, Y)
     return np.sum(predictions == Y) / Y.size
 
+
+acc_array = [] #init accuracy array
+t = [] # init elapsed time array
 # putting it all together while printing every 10i
 def gradient_descent(X, Y, alpha, iterations):
     W1, b1, W2, b2 = init_params()
     for i in range(iterations):
+        start = timeit.default_timer () # Get the current value of the timer
         Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, X)
         dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y)
         W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
+        
+        predictions = get_predictions(A2)
+        acc = get_accuracy(predictions, Y)
+        acc_array.append(acc)
+
         if i % 10 == 0:
             print("Iteration: ", i)
-            predictions = get_predictions(A2)
-            print(get_accuracy(predictions, Y))
+            print(np.round(acc * 100, 2), "%")
+
+        end = timeit.default_timer ()
+        elapsed = end - start
+        t.append([elapsed])
+
     return W1, b1, W2, b2
 
-# do the thing
-W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.1, 5000) # 0.1 ; 500 for quick testing (sub 1min)
+# run it
+iterations = 500
+W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.2, iterations) # 0.1 ; 500 for quick testing (sub 1min)
 
 # predict number from drawing
 Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, canvas_arr)
 result = get_predictions(A2)
 print(result)
+
+# Chart the acc
+# Create a fig and 3D axes
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot the surface
+x = range(0, iterations, 1) # create arr from 0 to 500
+t = np.array(t) # 2d arr convert
+ax.plot_surface(x, acc_array, t, cmap='viridis') # x y z
+
+# Add labels and title
+ax.set_xlabel('iteration')
+ax.set_ylabel('accuracy')
+ax.set_zlabel('processing time')
+ax.set_title('3D accuracy chart')
+
+# Show the plot
+# Zoom in the z axis by reducing the distance and setting limits
+ax.dist = 1000 # Set dist (def is 10)
+ax.set_zlim3d(0, 0.2) # Set z limits
+
+plt.show()
