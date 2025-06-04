@@ -135,8 +135,8 @@ def ReLU(Z):
 
 # define probability distribution of Z (chinese for fitting data in an interval of 0-1, used to find output)
 def softmax(Z):
-    A = np.exp(Z) / sum(np.exp(Z))
-    return A
+    expZ = np.exp(Z - np.max(Z, axis=0, keepdims=True))  # for stability
+    return expZ / np.sum(expZ, axis=0, keepdims=True)
     
 # defining forward propagation 
 def forward_prop(W1, b1, W2, b2, X):
@@ -148,7 +148,7 @@ def forward_prop(W1, b1, W2, b2, X):
 
 # derivative of ReLu (returns 1 or 0)
 def ReLU_deriv(Z):
-    return Z > 0
+    return (Z > 0).astype(float)
 
 # weird func to define loss percentage of the system
 def one_hot(Y):
@@ -162,10 +162,10 @@ def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
     one_hot_Y = one_hot(Y)
     dZ2 = A2 - one_hot_Y
     dW2 = 1 / m * dZ2.dot(A1.T)
-    db2 = 1 / m * np.sum(dZ2)
+    db2 = 1 / m * np.sum(dZ2, axis=1, keepdims=True)
     dZ1 = W2.T.dot(dZ2) * ReLU_deriv(Z1)
     dW1 = 1 / m * dZ1.dot(X.T)
-    db1 = 1 / m * np.sum(dZ1)
+    db1 = 1 / m * np.sum(dZ1, axis=1, keepdims=True)
     return dW1, db1, dW2, db2
 
 # updating the weights and biases
@@ -225,20 +225,15 @@ print(result)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-# Plot the surface
-x = range(0, iterations, 1) # create arr from 0 to 500
-t = np.array(t) # 2d arr convert
-ax.plot_surface(x, acc_array, t, cmap='viridis') # x y z
+x = np.arange(iterations)
+acc_array_np = np.array(acc_array)
+t_np = np.array(t).flatten()  # Make sure t is 1D
 
-# Add labels and title
+ax.plot3D(x, acc_array_np, t_np, color='blue')
+
 ax.set_xlabel('iteration')
 ax.set_ylabel('accuracy')
 ax.set_zlabel('processing time')
 ax.set_title('3D accuracy chart')
-
-# Show the plot
-# Zoom in the z axis by reducing the distance and setting limits
-ax.dist = 1000 # Set dist (def is 10)
-ax.set_zlim3d(0, 0.2) # Set z limits
 
 plt.show()
