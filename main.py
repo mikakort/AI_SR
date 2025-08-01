@@ -114,12 +114,13 @@ np.random.shuffle(data)
 
 
 # Split into train and test (test.csv available though)
-data_dev = data[0:1000].T  # transpose data into columns of 728 rows/pixels
+# Use 10,000 samples for dev set and rest for training (much more realistic split)
+data_dev = data[0:10000].T  # transpose data into columns of 784 rows/pixels
 Y_dev = data_dev[0]
 X_dev = data_dev[1:n]
 X_dev = X_dev / 255.0
 
-data_train = data[1000:m].T  # ''
+data_train = data[10000:m].T  # Use remaining data for training
 Y_train = data_train[0]
 X_train = data_train[1:n]
 X_train = X_train / 255.0
@@ -133,14 +134,18 @@ np.savetxt("canvas_array.csv", canvas_arr,
 
 # Working with the organized data
 
-# setting inital weights and biases
+# setting initial weights and biases with proper Xavier initialization
 
 
 def init_params():
-    W1 = np.random.rand(10, 784) - 0.5
-    b1 = np.random.rand(10, 1) - 0.5
-    W2 = np.random.rand(10, 10) - 0.5
-    b2 = np.random.rand(10, 1) - 0.5
+    # Xavier initialization for better convergence
+    # Increased hidden layer size from 10 to 128 for much better capacity
+    # He initialization for ReLU
+    W1 = np.random.randn(128, 784) * np.sqrt(2 / 784)
+    b1 = np.zeros((128, 1))
+    # 10 outputs for digits 0-9
+    W2 = np.random.randn(10, 128) * np.sqrt(2 / 128)
+    b2 = np.zeros((10, 1))
     return W1, b1, W2, b2
 
 # Rectified Linear Unit function
@@ -185,13 +190,14 @@ def one_hot(Y):
 
 
 def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
+    m_batch = Y.size  # Use actual batch size for gradient calculation
     one_hot_Y = one_hot(Y)
     dZ2 = A2 - one_hot_Y
-    dW2 = 1 / m * dZ2.dot(A1.T)
-    db2 = 1 / m * np.sum(dZ2, axis=1, keepdims=True)
+    dW2 = 1 / m_batch * dZ2.dot(A1.T)
+    db2 = 1 / m_batch * np.sum(dZ2, axis=1, keepdims=True)
     dZ1 = W2.T.dot(dZ2) * ReLU_deriv(Z1)
-    dW1 = 1 / m * dZ1.dot(X.T)
-    db1 = 1 / m * np.sum(dZ1, axis=1, keepdims=True)
+    dW1 = 1 / m_batch * dZ1.dot(X.T)
+    db1 = 1 / m_batch * np.sum(dZ1, axis=1, keepdims=True)
     return dW1, db1, dW2, db2
 
 # updating the weights and biases
@@ -219,11 +225,12 @@ def get_accuracy(predictions, Y):
 
 
 acc_array = []  # init accuracy array
+dev_acc_array = []  # init dev accuracy array
 t = []  # init elapsed time array
 # putting it all together while printing every 10i
 
 
-def gradient_descent(X, Y, alpha, iterations):
+def gradient_descent(X, Y, X_dev, Y_dev, alpha, iterations):
     W1, b1, W2, b2 = init_params()
     for i in range(iterations):
         start = timeit.default_timer()  # Get the current value of the timer
@@ -232,13 +239,23 @@ def gradient_descent(X, Y, alpha, iterations):
         W1, b1, W2, b2 = update_params(
             W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
 
+        # Calculate training accuracy
         predictions = get_predictions(A2)
-        acc = get_accuracy(predictions, Y)
-        acc_array.append(acc)
+        train_acc = get_accuracy(predictions, Y)
+        acc_array.append(train_acc)
 
+        # Calculate validation accuracy every 10 iterations
         if i % 10 == 0:
-            print("Iteration: ", i)
-            print(np.round(acc * 100, 2), "%")
+            Z1_dev, A1_dev, Z2_dev, A2_dev = forward_prop(
+                W1, b1, W2, b2, X_dev)
+            dev_predictions = get_predictions(A2_dev)
+            dev_acc = get_accuracy(dev_predictions, Y_dev)
+            dev_acc_array.append(dev_acc)
+
+            print(f"Iteration: {i}")
+            print(f"Training Accuracy: {np.round(train_acc * 100, 2)}%")
+            print(f"Validation Accuracy: {np.round(dev_acc * 100, 2)}%")
+            print("---")
 
         end = timeit.default_timer()
         elapsed = end - start
@@ -248,9 +265,11 @@ def gradient_descent(X, Y, alpha, iterations):
 
 
 # run it
-iterations = 500
-# 0.1 ; 500 for quick testing (sub 1min)
-W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.2, iterations)
+iterations = 1000  # Increased iterations for better training
+# Lower learning rate for better stability and convergence
+alpha = 0.01  # Further reduced learning rate for larger network
+W1, b1, W2, b2 = gradient_descent(
+    X_train, Y_train, X_dev, Y_dev, alpha, iterations)
 
 # predict number from drawing
 Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, canvas_arr)
